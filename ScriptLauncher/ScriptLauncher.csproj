@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latestmajor</LangVersion>
+        <Title>Script Luncher</Title>
+        <Authors>Fahim Shahrier Rasel</Authors>
+        <Company>Fahim Shahrier Rasel</Company>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="INIParser" Version="1.0.4" />
+        <PackageReference Include="Terminal.Gui" Version="2.0.0-alpha.4146" />
+    </ItemGroup>
+
+</Project>
