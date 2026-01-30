@@ -13,7 +13,9 @@ public static class IniFileHelper
     /// <returns>Path to the INI file in the application's base directory</returns>
     public static string GetIniFilePath()
     {
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, IniFileName);
+        var exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)
+            ?? AppDomain.CurrentDomain.BaseDirectory;
+        return Path.Combine(exeDirectory, IniFileName);
     }
 
     /// <summary>

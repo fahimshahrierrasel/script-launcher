@@ -142,9 +142,10 @@ public class MainWindow : Runnable<string?>
 
     private void LoadCommands()
     {
+        var iniPath = IniFileHelper.GetIniFilePath();
         _commands = _commandService.LoadCommands();
         _commandListView.SetCommands(_commands);
-        UpdateStatus($"Loaded {_commands.Count} commands");
+        UpdateStatus($"Loaded {_commands.Count} commands from {iniPath}");
         UpdateButtonStates();
     }
 
