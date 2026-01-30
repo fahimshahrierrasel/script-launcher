@@ -88,3 +88,6 @@ The working directory is applied before execution.
 - Left panel: List of commands
 - Right panel: Command details
 - Bottom: Buttons (Run, Add, Edit, Delete, Quit)
+
+
+<a href="https://www.flaticon.com/free-icons/code" title="code icons">Code icons created by Roundicons Premium - Flaticon</a>
