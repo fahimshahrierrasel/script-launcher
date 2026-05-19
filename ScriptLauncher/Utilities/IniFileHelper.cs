@@ -7,20 +7,16 @@ public static class IniFileHelper
 {
     private const string IniFileName = "commands.ini";
 
-    /// <summary>
-    /// Gets the full path to the commands.ini file
-    /// </summary>
-    /// <returns>Path to the INI file in the application's base directory</returns>
+    internal static string? OverridePath { get; set; }
+
     public static string GetIniFilePath()
     {
+        if (OverridePath != null) return OverridePath;
         var exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)
             ?? AppDomain.CurrentDomain.BaseDirectory;
         return Path.Combine(exeDirectory, IniFileName);
     }
 
-    /// <summary>
-    /// Ensures the INI file exists, creating it if necessary
-    /// </summary>
     public static void EnsureIniFileExists()
     {
         var filePath = GetIniFilePath();
