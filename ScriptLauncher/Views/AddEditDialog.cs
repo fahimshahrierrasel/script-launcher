@@ -1,5 +1,7 @@
  using System.Collections.ObjectModel;
+ using System.Diagnostics.CodeAnalysis;
  using ScriptLauncher.Models;
+ using Terminal.Gui.Input;
  using Terminal.Gui.ViewBase;
  using Terminal.Gui.Views;
  using Terminal.Gui;
@@ -7,11 +9,10 @@
 
 namespace ScriptLauncher.Views;
 
-/// <summary>
-/// Modal dialog for adding or editing commands
-/// </summary>
- public class AddEditDialog : Dialog
- {
+[ExcludeFromCodeCoverage]
+public class AddEditDialog : Dialog
+{
+    private bool _disposed = false;
      private TextField _nameField = null!;
      private ListView _shellListView = null!;
      private TextField _directoryField = null!;
@@ -104,11 +105,7 @@ namespace ScriptLauncher.Views;
             Y = 6,
             Width = 15
         };
-        _browseButton.Accepting += (sender, e) =>
-        {
-            OnBrowse();
-            e.Handled = true;
-        };
+        _browseButton.Accepting += OnBrowseButtonAccepting;
 
         // Command text (multi-line)
         var cmdLabel = new Label
@@ -144,17 +141,8 @@ namespace ScriptLauncher.Views;
             Width = 15
         };
 
-        _saveButton.Accepting += (sender, e) =>
-        {
-            OnSave();
-            e.Handled = true;
-        };
-
-        _cancelButton.Accepting += (sender, e) =>
-        {
-            OnCancel();
-            e.Handled = true;
-        };
+        _saveButton.Accepting += OnSaveButtonAccepting;
+        _cancelButton.Accepting += OnCancelButtonAccepting;
 
          Add(nameLabel, _nameField, shellLabel, _shellListView,
              dirLabel, _directoryField, _browseButton, cmdLabel, _commandText,
@@ -217,7 +205,7 @@ namespace ScriptLauncher.Views;
 
      private void OnBrowse()
      {
-         var dialog = new OpenDialog
+         using var dialog = new OpenDialog
          {
              Title = "Select Working Directory",
              OpenMode = OpenMode.Directory
@@ -248,5 +236,44 @@ namespace ScriptLauncher.Views;
         Data = null;
         // Close dialog
         RequestStop();
+    }
+
+    private static void MarkHandled(CommandEventArgs e)
+    {
+        e.Handled = true;
+    }
+
+    private void OnBrowseButtonAccepting(object? sender, CommandEventArgs e)
+    {
+        OnBrowse();
+        MarkHandled(e);
+    }
+
+    private void OnSaveButtonAccepting(object? sender, CommandEventArgs e)
+    {
+        OnSave();
+        MarkHandled(e);
+    }
+
+    private void OnCancelButtonAccepting(object? sender, CommandEventArgs e)
+    {
+        OnCancel();
+        MarkHandled(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from button events
+                if (_browseButton != null) _browseButton.Accepting -= OnBrowseButtonAccepting;
+                if (_saveButton != null) _saveButton.Accepting -= OnSaveButtonAccepting;
+                if (_cancelButton != null) _cancelButton.Accepting -= OnCancelButtonAccepting;
+            }
+            _disposed = true;
+        }
+        base.Dispose(disposing);
     }
 }

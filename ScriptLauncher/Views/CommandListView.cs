@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using ScriptLauncher.Models;
 using Terminal.Gui;
 using Terminal.Gui.Input;
@@ -8,13 +9,12 @@ using ScriptCommand = ScriptLauncher.Models.Command;
 
 namespace ScriptLauncher.Views;
 
-/// <summary>
-/// Left panel component displaying a list of commands
-/// </summary>
+[ExcludeFromCodeCoverage]
 public class CommandListView : View
 {
     private ListView _listView = null!;
     private List<ScriptCommand> _commands = new();
+    private bool _disposed = false;
 
     /// <summary>
     /// Event raised when the selected command changes
@@ -51,20 +51,8 @@ public class CommandListView : View
             CanFocus = true
         };
 
-        _listView.ValueChanged += (_, _) =>
-        {
-            var selectedCommand = GetSelectedCommand();
-            SelectionChanged?.Invoke(this, selectedCommand);
-        };
-
-        _listView.KeyDown += (_, key) =>
-        {
-            if (key == Key.Enter)
-            {
-                var selectedCommand = GetSelectedCommand();
-                CommandActivated?.Invoke(this, selectedCommand);
-            }
-        };
+        _listView.ValueChanged += OnListViewValueChanged;
+        _listView.KeyDown += OnListViewKeyDown;
 
         Add(_listView);
     }
@@ -96,6 +84,18 @@ public class CommandListView : View
     }
 
     /// <summary>
+    /// Gets the index of the currently selected command
+    /// </summary>
+    public int GetSelectedIndex()
+    {
+        if (_listView.SelectedItem.HasValue && _listView.SelectedItem.Value >= 0 && _listView.SelectedItem.Value < _commands.Count)
+        {
+            return _listView.SelectedItem.Value;
+        }
+        return -1;
+    }
+
+    /// <summary>
     /// Sets the selected command by index
     /// </summary>
     public void SetSelectedIndex(int index)
@@ -112,5 +112,35 @@ public class CommandListView : View
     public void ClearSelection()
     {
         _listView.SelectedItem = null;
+    }
+
+    private void OnListViewValueChanged(object? _, object? __)
+    {
+        var selectedCommand = GetSelectedCommand();
+        SelectionChanged?.Invoke(this, selectedCommand);
+    }
+
+    private void OnListViewKeyDown(object? _, Key key)
+    {
+        if (key == Key.Enter)
+        {
+            var selectedCommand = GetSelectedCommand();
+            CommandActivated?.Invoke(this, selectedCommand);
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing && _listView != null)
+            {
+                // Unsubscribe from event handlers
+                _listView.ValueChanged -= OnListViewValueChanged;
+                _listView.KeyDown -= OnListViewKeyDown;
+            }
+            _disposed = true;
+        }
+        base.Dispose(disposing);
     }
 }

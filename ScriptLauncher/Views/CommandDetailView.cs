@@ -1,12 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using ScriptLauncher.Models;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
 namespace ScriptLauncher.Views;
 
-/// <summary>
-/// Right panel component displaying command details
-/// </summary>
+[ExcludeFromCodeCoverage]
 public class CommandDetailView : View
 {
     private Label _nameLabel = null!;

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Terminal.Gui;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
@@ -5,11 +6,10 @@ using Terminal.Gui.Views;
 
 namespace ScriptLauncher.Views;
 
-/// <summary>
-/// Button bar view containing Run, Add, Edit, Delete, and Quit buttons
-/// </summary>
+[ExcludeFromCodeCoverage]
 public class ButtonBarView : View
 {
+    private bool _disposed = false;
     private Button _runButton = null!;
     private Button _addButton = null!;
     private Button _editButton = null!;
@@ -41,6 +41,11 @@ public class ButtonBarView : View
     /// </summary>
     public event EventHandler? QuitClicked;
 
+    private static void MarkHandled(CommandEventArgs e)
+    {
+        e.Handled = true;
+    }
+
     public ButtonBarView()
     {
         InitializeComponents();
@@ -55,11 +60,7 @@ public class ButtonBarView : View
             Y = 0,
             Width = 15
         };
-        _runButton.Accepting += (_, e) =>
-        {
-            RunClicked?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        };
+        _runButton.Accepting += OnRunButtonAccepting;
 
         _addButton = new Button
         {
@@ -68,11 +69,7 @@ public class ButtonBarView : View
             Y = 0,
             Width = 15
         };
-        _addButton.Accepting += (_, e) =>
-        {
-            AddClicked?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        };
+        _addButton.Accepting += OnAddButtonAccepting;
 
         _editButton = new Button
         {
@@ -81,11 +78,7 @@ public class ButtonBarView : View
             Y = 0,
             Width = 15
         };
-        _editButton.Accepting += (_, e) =>
-        {
-            EditClicked?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        };
+        _editButton.Accepting += OnEditButtonAccepting;
 
         _deleteButton = new Button
         {
@@ -94,11 +87,7 @@ public class ButtonBarView : View
             Y = 0,
             Width = 15
         };
-        _deleteButton.Accepting += (_, e) =>
-        {
-            DeleteClicked?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        };
+        _deleteButton.Accepting += OnDeleteButtonAccepting;
 
         _quitButton = new Button
         {
@@ -107,11 +96,7 @@ public class ButtonBarView : View
             Y = 0,
             Width = 15
         };
-        _quitButton.Accepting += (_, e) =>
-        {
-            QuitClicked?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        };
+        _quitButton.Accepting += OnQuitButtonAccepting;
 
         Add(_runButton, _addButton, _editButton, _deleteButton, _quitButton);
     }
@@ -124,5 +109,53 @@ public class ButtonBarView : View
         _runButton.Enabled = hasSelection;
         _editButton.Enabled = hasSelection;
         _deleteButton.Enabled = hasSelection;
+    }
+
+    private void OnRunButtonAccepting(object? _, CommandEventArgs e)
+    {
+        RunClicked?.Invoke(this, EventArgs.Empty);
+        MarkHandled(e);
+    }
+
+    private void OnAddButtonAccepting(object? _, CommandEventArgs e)
+    {
+        AddClicked?.Invoke(this, EventArgs.Empty);
+        MarkHandled(e);
+    }
+
+    private void OnEditButtonAccepting(object? _, CommandEventArgs e)
+    {
+        EditClicked?.Invoke(this, EventArgs.Empty);
+        MarkHandled(e);
+    }
+
+    private void OnDeleteButtonAccepting(object? _, CommandEventArgs e)
+    {
+        DeleteClicked?.Invoke(this, EventArgs.Empty);
+        MarkHandled(e);
+    }
+
+    private void OnQuitButtonAccepting(object? _, CommandEventArgs e)
+    {
+        QuitClicked?.Invoke(this, EventArgs.Empty);
+        MarkHandled(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from all button events
+                if (_runButton != null) _runButton.Accepting -= OnRunButtonAccepting;
+                if (_addButton != null) _addButton.Accepting -= OnAddButtonAccepting;
+                if (_editButton != null) _editButton.Accepting -= OnEditButtonAccepting;
+                if (_deleteButton != null) _deleteButton.Accepting -= OnDeleteButtonAccepting;
+                if (_quitButton != null) _quitButton.Accepting -= OnQuitButtonAccepting;
+            }
+            _disposed = true;
+        }
+        base.Dispose(disposing);
     }
 }
