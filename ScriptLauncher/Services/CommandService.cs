@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using INIParser;
 using ScriptLauncher.Models;
@@ -11,6 +12,19 @@ namespace ScriptLauncher.Services;
 public class CommandService : ICommandService
 {
     private const string SectionPrefix = "Command_";
+    private readonly string? _filePath;
+
+    public CommandService() { }
+
+    internal CommandService(string filePath)
+    {
+        _filePath = filePath;
+    }
+
+    private string GetFilePath() => _filePath ?? IniFileHelper.GetIniFilePath();
+
+    [ExcludeFromCodeCoverage]
+    private static void LogError(string message) => Console.WriteLine(message);
 
     /// <summary>
     /// Loads all commands from the INI file
@@ -18,7 +32,7 @@ public class CommandService : ICommandService
     public List<Command> LoadCommands()
     {
         var commands = new List<Command>();
-        var filePath = IniFileHelper.GetIniFilePath();
+        var filePath = GetFilePath();
 
         if (!File.Exists(filePath))
         {
@@ -29,8 +43,6 @@ public class CommandService : ICommandService
         {
             var iniFile = new IniFile(filePath);
 
-            // Iterate through sections to find Command_XXX sections
-            // We need to try incrementing numbers until we don't find any more
             int index = 1;
             while (true)
             {
@@ -39,7 +51,6 @@ public class CommandService : ICommandService
 
                 if (string.IsNullOrEmpty(name))
                 {
-                    // No more command sections found
                     break;
                 }
 
@@ -47,6 +58,7 @@ public class CommandService : ICommandService
                 {
                     var command = new Command
                     {
+                        Id = commands.Count,
                         Name = name,
                         ShellType = ParseShellType(iniFile[sectionName, "Shell"] ?? "PowerShell"),
                         WorkingDirectory = iniFile[sectionName, "WorkingDirectory"] ?? string.Empty,
@@ -57,8 +69,7 @@ public class CommandService : ICommandService
                 }
                 catch (Exception ex)
                 {
-                    // Skip malformed sections but log the issue
-                    Console.WriteLine($"Warning: Failed to parse section {sectionName}: {ex.Message}");
+                    LogError($"Warning: Failed to parse section {sectionName}: {ex.Message}");
                 }
 
                 index++;
@@ -66,7 +77,7 @@ public class CommandService : ICommandService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading commands: {ex.Message}");
+            LogError($"Error loading commands: {ex.Message}");
         }
 
         return commands;
@@ -77,7 +88,7 @@ public class CommandService : ICommandService
     /// </summary>
     public void SaveCommands(List<Command> commands)
     {
-        var filePath = IniFileHelper.GetIniFilePath();
+        var filePath = GetFilePath();
 
         try
         {
@@ -85,7 +96,7 @@ public class CommandService : ICommandService
 
             for (int i = 0; i < commands.Count; i++)
             {
-                string sectionName = $"{SectionPrefix}{i + 1:D3}"; // Command_001, Command_002, etc.
+                string sectionName = $"{SectionPrefix}{i + 1:D3}";
 
                 iniFile[sectionName, "Name"] = commands[i].Name;
                 iniFile[sectionName, "Shell"] = commands[i].ShellType.ToString();
@@ -97,7 +108,7 @@ public class CommandService : ICommandService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving commands: {ex.Message}");
+            LogError($"Error saving commands: {ex.Message}");
             throw;
         }
     }
@@ -115,16 +126,11 @@ public class CommandService : ICommandService
     /// <summary>
     /// Updates an existing command in the INI file
     /// </summary>
-    public void UpdateCommand(Command oldCommand, Command newCommand)
+    public void UpdateCommand(int index, Command newCommand)
     {
         var commands = LoadCommands();
-        var index = commands.FindIndex(c =>
-            c.Name == oldCommand.Name &&
-            c.CommandText == oldCommand.CommandText &&
-            c.ShellType == oldCommand.ShellType &&
-            c.WorkingDirectory == oldCommand.WorkingDirectory);
 
-        if (index >= 0)
+        if (index >= 0 && index < commands.Count)
         {
             commands[index] = newCommand;
             SaveCommands(commands);
@@ -134,16 +140,11 @@ public class CommandService : ICommandService
     /// <summary>
     /// Deletes a command from the INI file
     /// </summary>
-    public void DeleteCommand(Command command)
+    public void DeleteCommand(int index)
     {
         var commands = LoadCommands();
-        var index = commands.FindIndex(c =>
-            c.Name == command.Name &&
-            c.CommandText == command.CommandText &&
-            c.ShellType == command.ShellType &&
-            c.WorkingDirectory == command.WorkingDirectory);
 
-        if (index >= 0)
+        if (index >= 0 && index < commands.Count)
         {
             commands.RemoveAt(index);
             SaveCommands(commands);
@@ -153,14 +154,13 @@ public class CommandService : ICommandService
     /// <summary>
     /// Parses a shell type string into the ShellType enum
     /// </summary>
-    private static ShellType ParseShellType(string shellString)
+    internal static ShellType ParseShellType(string shellString)
     {
         if (Enum.TryParse<ShellType>(shellString, out var shellType))
         {
             return shellType;
         }
 
-        // Default to PowerShell if parsing fails
         return ShellType.PowerShell;
     }
 }

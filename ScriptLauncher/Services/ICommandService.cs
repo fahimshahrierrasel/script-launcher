@@ -28,13 +28,13 @@ public interface ICommandService
     /// <summary>
     /// Updates an existing command in the INI file
     /// </summary>
-    /// <param name="oldCommand">Original command to replace</param>
+    /// <param name="index">Zero-based index of the command to update</param>
     /// <param name="newCommand">New command data</param>
-    void UpdateCommand(Command oldCommand, Command newCommand);
+    void UpdateCommand(int index, Command newCommand);
 
     /// <summary>
     /// Deletes a command from the INI file
     /// </summary>
-    /// <param name="command">Command to delete</param>
-    void DeleteCommand(Command command);
+    /// <param name="index">Zero-based index of the command to delete</param>
+    void DeleteCommand(int index);
 }
