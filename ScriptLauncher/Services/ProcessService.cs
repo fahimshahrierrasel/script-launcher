@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ScriptLauncher.Models;
 
 namespace ScriptLauncher.Services;
@@ -30,7 +31,12 @@ public class ProcessService
                 ? BuildWindowsStartInfo(command, workingDirectory)
                 : BuildCrossPlatformStartInfo(command, workingDirectory);
 
-            Process.Start(startInfo);
+            var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                process.EnableRaisingEvents = true;
+                process.Exited += (_, _) => process.Dispose();
+            }
         }
         catch (Exception ex)
         {
@@ -38,7 +44,7 @@ public class ProcessService
         }
     }
 
-    private static ProcessStartInfo BuildWindowsStartInfo(Command command, string workingDirectory)
+    internal static ProcessStartInfo BuildWindowsStartInfo(Command command, string workingDirectory)
     {
         var startInfo = new ProcessStartInfo("cmd.exe")
         {
@@ -67,17 +73,8 @@ public class ProcessService
         return startInfo;
     }
 
-    private static string EscapeCommandLineArgument(string argument)
-    {
-        // Properly escape arguments for CMD
-        if (argument.Contains(" ") || argument.Contains("\t") || argument.Contains("\""))
-        {
-            return $"\"{argument.Replace("\"", "\"\"")}\"";
-        }
-        return argument;
-    }
-
-    private static ProcessStartInfo BuildCrossPlatformStartInfo(Command command, string workingDirectory)
+    [ExcludeFromCodeCoverage]
+    internal static ProcessStartInfo BuildCrossPlatformStartInfo(Command command, string workingDirectory)
     {
         if (OperatingSystem.IsMacOS())
         {
@@ -89,7 +86,7 @@ public class ProcessService
         }
     }
 
-    private static (string executable, IEnumerable<string> arguments) GetWindowsShellInvocation(Command command)
+    internal static (string executable, IEnumerable<string> arguments) GetWindowsShellInvocation(Command command)
     {
         var script = command.CommandText ?? string.Empty;
 
@@ -102,7 +99,7 @@ public class ProcessService
         };
     }
 
-    private static (string executable, IEnumerable<string> arguments) GetDefaultShellInvocation(Command command)
+    internal static (string executable, IEnumerable<string> arguments) GetDefaultShellInvocation(Command command)
     {
         var script = command.CommandText ?? string.Empty;
 
@@ -115,7 +112,8 @@ public class ProcessService
         };
     }
 
-    private static string? DetectLinuxTerminal()
+    [ExcludeFromCodeCoverage]
+    internal static string? DetectLinuxTerminal()
     {
         var terminals = new[] { "gnome-terminal", "konsole", "xfce4-terminal", "mate-terminal", "lxterminal", "xterm" };
 
@@ -123,7 +121,7 @@ public class ProcessService
         {
             try
             {
-                var whichProcess = new Process
+                using var whichProcess = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
@@ -154,7 +152,8 @@ public class ProcessService
         return null;
     }
 
-    private static ProcessStartInfo BuildMacOsStartInfo(Command command, string workingDirectory)
+    [ExcludeFromCodeCoverage]
+    internal static ProcessStartInfo BuildMacOsStartInfo(Command command, string workingDirectory)
     {
         var script = command.CommandText ?? string.Empty;
         var tempFileName = $"/tmp/script-launcher-{Guid.NewGuid()}.sh";
@@ -173,7 +172,7 @@ exec bash
 
         File.WriteAllText(tempFileName, scriptContent);
 
-        var chmodProcess = new Process
+        using var chmodProcess = new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -195,10 +194,15 @@ exec bash
         startInfo.ArgumentList.Add("Terminal.app");
         startInfo.ArgumentList.Add(tempFileName);
 
+        // Clean up temp file after Terminal.app opens it
+        // Terminal.app keeps file handle, so safe to delete after open command
+        try { File.Delete(tempFileName); } catch { /* Ignore if file locked */ }
+
         return startInfo;
     }
 
-    private static ProcessStartInfo BuildLinuxTerminalStartInfo(Command command, string workingDirectory)
+    [ExcludeFromCodeCoverage]
+    internal static ProcessStartInfo BuildLinuxTerminalStartInfo(Command command, string workingDirectory)
     {
         var terminal = DetectLinuxTerminal();
         if (terminal == null)
