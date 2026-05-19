@@ -6,6 +6,11 @@ namespace ScriptLauncher.Models;
 public class Command
 {
     /// <summary>
+    /// Unique identifier (list index from INI file)
+    /// </summary>
+    public int Id { get; set; } = -1;
+
+    /// <summary>
     /// Display name for the command
     /// </summary>
     public string Name { get; set; } = string.Empty;
@@ -32,6 +37,7 @@ public class Command
     {
         return new Command
         {
+            Id = Id,
             Name = Name,
             ShellType = ShellType,
             WorkingDirectory = WorkingDirectory,
