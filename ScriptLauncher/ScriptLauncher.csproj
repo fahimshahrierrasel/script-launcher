@@ -7,15 +7,19 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latestmajor</LangVersion>
-        <Title>Script Luncher</Title>
+        <Title>Script Launcher</Title>
         <Authors>Fahim Shahrier Rasel</Authors>
         <Company>Fahim Shahrier Rasel</Company>
         <ApplicationIcon>coding.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="ScriptLauncher.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="INIParser" Version="1.0.4" />
-        <PackageReference Include="Terminal.Gui" Version="2.0.0-alpha.4146" />
+        <PackageReference Include="Terminal.Gui" Version="2.0.1" />
     </ItemGroup>
 
 </Project>
