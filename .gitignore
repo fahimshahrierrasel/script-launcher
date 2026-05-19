@@ -85,3 +85,4 @@ nul
 # INI files (user configuration)
 *.ini
 !commands.ini
+TestResults
