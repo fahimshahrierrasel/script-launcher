@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ScriptLauncher.Services;
 using ScriptLauncher.Utilities;
 using ScriptLauncher.Views;
@@ -8,6 +9,7 @@ using ScriptCommand = ScriptLauncher.Models.Command;
 
 namespace ScriptLauncher;
 
+[ExcludeFromCodeCoverage]
 public class MainWindow : Runnable<string?>
 {
     private CommandService _commandService = null!;
@@ -107,11 +109,11 @@ public class MainWindow : Runnable<string?>
             Height = 1
         };
 
-        _buttonBar.RunClicked += (_, _) => OnRun();
-        _buttonBar.AddClicked += (_, _) => OnAdd();
-        _buttonBar.EditClicked += (_, _) => OnEdit();
-        _buttonBar.DeleteClicked += (_, _) => OnDelete();
-        _buttonBar.QuitClicked += (_, _) => OnQuit();
+        _buttonBar.RunClicked += OnButtonBarRun;
+        _buttonBar.AddClicked += OnButtonBarAdd;
+        _buttonBar.EditClicked += OnButtonBarEdit;
+        _buttonBar.DeleteClicked += OnButtonBarDelete;
+        _buttonBar.QuitClicked += OnButtonBarQuit;
 
         // Status bar
         _statusLabel = new Label
@@ -131,13 +133,7 @@ public class MainWindow : Runnable<string?>
         _commandListView.FocusList();
 
         // Handle Q key to quit
-        KeyDown += (_, key) =>
-        {
-            if (key == Key.Q)
-            {
-                OnQuit();
-            }
-        };
+        KeyDown += OnKeyDown;
     }
 
     private void LoadCommands()
@@ -172,6 +168,12 @@ public class MainWindow : Runnable<string?>
         }
     }
 
+    private void OnButtonBarRun(object? _, EventArgs __) => OnRun();
+    private void OnButtonBarAdd(object? _, EventArgs __) => OnAdd();
+    private void OnButtonBarEdit(object? _, EventArgs __) => OnEdit();
+    private void OnButtonBarDelete(object? _, EventArgs __) => OnDelete();
+    private void OnButtonBarQuit(object? _, EventArgs __) => OnQuit();
+
     private void OnAdd()
     {
         var dialog = new AddEditDialog();
@@ -194,12 +196,13 @@ public class MainWindow : Runnable<string?>
             return;
         }
 
+        var selectedIndex = _commandListView.GetSelectedIndex();
         var dialog = new AddEditDialog(command);
         var result = ShowAddEditDialog(dialog);
 
         if (result != null)
         {
-            _commandService.UpdateCommand(command, result);
+            _commandService.UpdateCommand(selectedIndex, result);
             LoadCommands();
             UpdateStatus("Command updated successfully");
         }
@@ -214,16 +217,24 @@ public class MainWindow : Runnable<string?>
             return;
         }
 
-        // Simple console-based confirmation
-        Console.WriteLine($"Delete command '{command.Name}'? (y/n)");
-        // For now, just delete without confirmation since we can't easily do modal dialogs in v2
-        _commandService.DeleteCommand(command);
-        LoadCommands();
-        UpdateStatus($"Command '{command.Name}' deleted");
+        var selectedIndex = _commandListView.GetSelectedIndex();
+
+        // Simple confirmation using Terminal.Gui MessageBox
+        var confirmResult = MessageBox.Query(Globals.Application!, "Confirm Delete",
+            $"Delete command '{command.Name}'?", "Yes", "No");
+
+        if (confirmResult == 0) // 0 = Yes
+        {
+            _commandService.DeleteCommand(selectedIndex);
+            LoadCommands();
+            UpdateStatus($"Command '{command.Name}' deleted");
+        }
     }
 
     private void OnQuit()
     {
+        // Cleanup event subscriptions before stopping
+        Cleanup();
         // Properly stop the application by requesting to stop this runnable
         RequestStop();
     }
@@ -233,6 +244,35 @@ public class MainWindow : Runnable<string?>
         UpdateStatus($"Running: {command.Name}...");
         _processService.ExecuteCommand(command);
         UpdateStatus($"Command '{command.Name}' executed");
+    }
+
+    private void OnKeyDown(object? _, Key key)
+    {
+        if (key == Key.Q)
+        {
+            OnQuit();
+        }
+    }
+
+    private void Cleanup()
+    {
+        // Unsubscribe from all events to prevent memory leaks
+        if (_commandListView != null)
+        {
+            _commandListView.SelectionChanged -= OnSelectionChanged;
+            _commandListView.CommandActivated -= OnCommandActivated;
+        }
+
+        if (_buttonBar != null)
+        {
+            _buttonBar.RunClicked -= OnButtonBarRun;
+            _buttonBar.AddClicked -= OnButtonBarAdd;
+            _buttonBar.EditClicked -= OnButtonBarEdit;
+            _buttonBar.DeleteClicked -= OnButtonBarDelete;
+            _buttonBar.QuitClicked -= OnButtonBarQuit;
+        }
+
+        KeyDown -= OnKeyDown;
     }
 
     private void UpdateStatus(string message)

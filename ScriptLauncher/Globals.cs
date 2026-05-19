@@ -1,11 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using Terminal.Gui.App;
 
 namespace ScriptLauncher;
 
-/// <summary>
-/// Global application state
-/// TODO: Remove this when Terminal.Gui v2 finalizes the modal dialog API pattern
-/// </summary>
+[ExcludeFromCodeCoverage]
 public static class Globals
 {
     /// <summary>
